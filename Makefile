@@ -13,18 +13,19 @@ endif
 CXX ?= clang++
 UFCODER_DIR := ufr-lib/macos/universal
 UFCODER_LIB := uFCoder-macos
+UFCODER_LDFLAGS := -L$(UFCODER_DIR) -l$(UFCODER_LIB) -Wl,-rpath,@executable_path/../../$(UFCODER_DIR)
 
 CXXFLAGS := -std=c++17 -O2 -Wall -Iufr-lib/include $(shell $(WX_CONFIG) --cxxflags)
-LDFLAGS  := -L$(UFCODER_DIR) -l$(UFCODER_LIB) \
-            -Wl,-rpath,@executable_path/../../$(UFCODER_DIR) \
-            $(shell $(WX_CONFIG) --libs)
+LDFLAGS  := $(UFCODER_LDFLAGS) $(shell $(WX_CONFIG) --libs)
 
 BINDIR   := bin/macos
 TARGET   := $(BINDIR)/uFR_Readers_tool
 SOURCES  := uFR_Readers_toolApp.cpp uFR_Readers_toolMain.cpp
 OBJECTS  := $(SOURCES:%.cpp=$(BINDIR)/%.o)
 
-.PHONY: all run clean
+LED_TARGET := $(BINDIR)/led_off
+
+.PHONY: all run clean led-off run-led-off
 
 all: $(TARGET)
 
@@ -39,6 +40,17 @@ $(TARGET): $(OBJECTS)
 
 run: $(TARGET)
 	./$(TARGET)
+
+# One-shot CLI to turn off the reader's idle-blink and card-detection LEDs
+# (uFR Zero series only). The setting is stored in the reader's EEPROM, so
+# it only needs to be run once and survives power cycles.
+led-off: $(LED_TARGET)
+
+$(LED_TARGET): $(BINDIR)/led_off.o
+	$(CXX) $< $(UFCODER_LDFLAGS) -o $@
+
+run-led-off: $(LED_TARGET)
+	./$(LED_TARGET)
 
 clean:
 	rm -rf $(BINDIR)
