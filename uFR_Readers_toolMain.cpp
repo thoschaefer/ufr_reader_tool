@@ -21,6 +21,14 @@
 #include <string>
 #include <map>
 
+#ifndef _WIN32
+#include <unistd.h>
+static inline void Sleep(unsigned int milliseconds)
+{
+    usleep(milliseconds * 1000);
+}
+#endif
+
 UFR_STATUS status;
 uint8_t red_light = 0;
 
